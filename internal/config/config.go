@@ -15,13 +15,16 @@ type AppConfig struct {
 	Redis     RedisConfig     `mapstructure:"redis"`
 	JWT       JWTConfig       `mapstructure:"jwt"`
 	Migration MigrationConfig `mapstructure:"migration"`
+	Google    GoogleConfig    `mapstructure:"google"`
+	Line      LineConfig      `mapstructure:"line"`
 }
 
 // ServerConfig contains HTTP server settings
 type ServerConfig struct {
-	Port    int           `mapstructure:"port"`
-	Mode    string        `mapstructure:"mode"` // debug, release, test
-	Timeout TimeoutConfig `mapstructure:"timeout"`
+	Port        int           `mapstructure:"port"`
+	Mode        string        `mapstructure:"mode"` // debug, release, test
+	Timeout     TimeoutConfig `mapstructure:"timeout"`
+	FrontendURL string        `mapstructure:"frontend_url"`
 }
 
 // TimeoutConfig contains server timeout settings
@@ -73,6 +76,20 @@ type MigrationConfig struct {
 	Table string `mapstructure:"table"`
 }
 
+// GoogleConfig contains Google OAuth settings
+type GoogleConfig struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	RedirectURL  string `mapstructure:"redirect_url"`
+}
+
+// LineConfig contains LINE OAuth settings
+type LineConfig struct {
+	ChannelID     string `mapstructure:"channel_id"`
+	ChannelSecret string `mapstructure:"channel_secret"`
+	RedirectURL   string `mapstructure:"redirect_url"`
+}
+
 // LoadConfig loads configuration from the specified file
 func LoadConfig(configPath string) (*AppConfig, error) {
 	viper.SetConfigFile(configPath)
@@ -87,6 +104,19 @@ func LoadConfig(configPath string) (*AppConfig, error) {
 	_ = viper.BindEnv("jwt.secret", "JWT_SECRET")
 	_ = viper.BindEnv("jwt.access_token_expiry", "JWT_ACCESS_EXP")
 	_ = viper.BindEnv("jwt.refresh_token_expiry", "JWT_REFRESH_EXP")
+
+	// Google OAuth bindings
+	_ = viper.BindEnv("google.client_id", "GOOGLE_CLIENT_ID")
+	_ = viper.BindEnv("google.client_secret", "GOOGLE_CLIENT_SECRET")
+	_ = viper.BindEnv("google.redirect_url", "GOOGLE_REDIRECT_URL")
+
+	// LINE OAuth bindings
+	_ = viper.BindEnv("line.channel_id", "LINE_CHANNEL_ID")
+	_ = viper.BindEnv("line.channel_secret", "LINE_CHANNEL_SECRET")
+	_ = viper.BindEnv("line.redirect_url", "LINE_REDIRECT_URL")
+
+	// Frontend URL binding
+	_ = viper.BindEnv("server.frontend_url", "FRONTEND_URL")
 
 	// Standard K8s/Docker bindings (No prefix)
 	_ = viper.BindEnv("server.port", "PORT")

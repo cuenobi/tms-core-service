@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"tms-core-service/internal/domain/repository"
+	"tms-core-service/internal/infra/db"
 
 	"gorm.io/gorm"
 )
@@ -19,7 +20,7 @@ func NewHealthCheckRepository(db *gorm.DB) repository.HealthCheckRepository {
 
 // Ping checks if the database connection is alive
 func (r *healthCheckRepo) Ping(ctx context.Context) error {
-	sqlDB, err := r.db.DB()
+	sqlDB, err := db.FromContext(ctx, r.db).DB()
 	if err != nil {
 		return err
 	}

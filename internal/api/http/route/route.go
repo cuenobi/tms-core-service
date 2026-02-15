@@ -37,11 +37,12 @@ func SetupRoutes(app *fiber.App, deps *Dependencies) {
 	authGroup := v1.Group("/auth")
 	authGroup.Post("/register", deps.AuthHandler.Register)
 	authGroup.Post("/login", deps.AuthHandler.Login)
+	authGroup.Get("/google/login", deps.AuthHandler.GoogleLogin)
+	authGroup.Get("/google/callback", deps.AuthHandler.GoogleCallback)
+	authGroup.Get("/line/login", deps.AuthHandler.LineLogin)
+	authGroup.Get("/line/callback", deps.AuthHandler.LineCallback)
 
 	// Protected routes (JWT required)
-	// We use an empty group or just add middleware to specific routes/groups
-	_ = v1.Group("", middleware.JWTAuth(deps.JWTService))
-	// Add protected routes here
-	// Example:
-	// protected.Get("/profile", profileHandler.GetProfile)
+	protected := v1.Group("", middleware.JWTAuth(deps.JWTService))
+	protected.Get("/auth/me", deps.AuthHandler.GetProfile)
 }

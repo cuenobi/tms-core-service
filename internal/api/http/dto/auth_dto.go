@@ -7,6 +7,7 @@ type UserResponse struct {
 	FirstName   string `json:"first_name"`
 	LastName    string `json:"last_name"`
 	PhoneNumber string `json:"phone_number"`
+	AvatarURL   string `json:"avatar_url"`
 }
 
 // RegisterRequest represents a user registration request

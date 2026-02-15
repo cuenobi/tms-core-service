@@ -24,6 +24,7 @@ type UserOutput struct {
 	PhoneNumber string
 	FirstName   string
 	LastName    string
+	AvatarURL   string
 }
 
 // AuthOutput represents authentication results

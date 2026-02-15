@@ -10,6 +10,8 @@ import (
 	"tms-core-service/internal/domain/errs"
 	"tms-core-service/internal/domain/repository"
 	"tms-core-service/internal/domain/service"
+
+	"github.com/google/uuid"
 )
 
 // AuthUseCase handles authentication operations
@@ -49,12 +51,14 @@ func (uc *AuthUseCase) Register(ctx context.Context, input RegisterInput) (*Auth
 	}
 
 	// Check if user already exists (Phone Number)
-	existingUser, err = uc.userRepo.FindByPhoneNumber(ctx, input.PhoneNumber)
-	if err != nil && !errors.Is(err, errs.ErrNotFound) {
-		return nil, fmt.Errorf("user repository: find by phone number: %w", err)
-	}
-	if existingUser != nil {
-		return nil, errs.ErrConflict
+	if input.PhoneNumber != "" {
+		existingUser, err = uc.userRepo.FindByPhoneNumber(ctx, input.PhoneNumber)
+		if err != nil && !errors.Is(err, errs.ErrNotFound) {
+			return nil, fmt.Errorf("user repository: find by phone number: %w", err)
+		}
+		if existingUser != nil {
+			return nil, errs.ErrConflict
+		}
 	}
 
 	// Hash password via service
@@ -66,7 +70,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, input RegisterInput) (*Auth
 	// Create user
 	user := &entity.User{
 		Email:        input.Email,
-		PhoneNumber:  input.PhoneNumber,
+		PhoneNumber:  stringPtr(input.PhoneNumber),
 		PasswordHash: passwordHash,
 		FirstName:    input.FirstName,
 		LastName:     input.LastName,
@@ -100,6 +104,26 @@ func (uc *AuthUseCase) Login(ctx context.Context, input LoginInput) (*AuthOutput
 	return uc.generateTokens(user)
 }
 
+// GetProfile returns user profile
+func (uc *AuthUseCase) GetProfile(ctx context.Context, userID uuid.UUID) (*UserOutput, error) {
+	user, err := uc.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, errs.ErrNotFound) {
+			return nil, errs.ErrNotFound
+		}
+		return nil, fmt.Errorf("user repository: find by id: %w", err)
+	}
+
+	return &UserOutput{
+		ID:          user.ID,
+		Email:       user.Email,
+		PhoneNumber: stringFromPtr(user.PhoneNumber),
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		AvatarURL:   user.AvatarURL,
+	}, nil
+}
+
 // generateTokens generates access and refresh tokens
 func (uc *AuthUseCase) generateTokens(user *entity.User) (*AuthOutput, error) {
 	// Generate access token
@@ -128,9 +152,24 @@ func (uc *AuthUseCase) generateTokens(user *entity.User) (*AuthOutput, error) {
 		User: &UserOutput{
 			ID:          user.ID,
 			Email:       user.Email,
-			PhoneNumber: user.PhoneNumber,
+			PhoneNumber: stringFromPtr(user.PhoneNumber),
 			FirstName:   user.FirstName,
 			LastName:    user.LastName,
+			AvatarURL:   user.AvatarURL,
 		},
 	}, nil
+}
+
+func stringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func stringFromPtr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

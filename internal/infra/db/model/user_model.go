@@ -13,10 +13,13 @@ import (
 type User struct {
 	ID           uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
 	Email        string    `gorm:"uniqueIndex;not null"`
-	PhoneNumber  string    `gorm:"uniqueIndex;not null"`
-	PasswordHash string    `gorm:"not null"`
+	PhoneNumber  *string   `gorm:"uniqueIndex"`
+	PasswordHash string
 	FirstName    string
 	LastName     string
+	AvatarURL    string
+	GoogleID     *string   `gorm:"uniqueIndex"`
+	LineID       *string   `gorm:"uniqueIndex"`
 	CreatedAt    time.Time `gorm:"not null;default:now()"`
 	UpdatedAt    time.Time
 	DeletedAt    gorm.DeletedAt `gorm:"index"`
@@ -41,6 +44,9 @@ func (m *User) ToEntity() *entity.User {
 		PasswordHash: m.PasswordHash,
 		FirstName:    m.FirstName,
 		LastName:     m.LastName,
+		AvatarURL:    m.AvatarURL,
+		GoogleID:     m.GoogleID,
+		LineID:       m.LineID,
 		CreatedAt:    m.CreatedAt,
 		UpdatedAt:    m.UpdatedAt,
 		DeletedAt:    deletedAt,
@@ -61,6 +67,9 @@ func FromEntity(e *entity.User) *User {
 		PasswordHash: e.PasswordHash,
 		FirstName:    e.FirstName,
 		LastName:     e.LastName,
+		AvatarURL:    e.AvatarURL,
+		GoogleID:     e.GoogleID,
+		LineID:       e.LineID,
 		CreatedAt:    e.CreatedAt,
 		UpdatedAt:    e.UpdatedAt,
 		DeletedAt:    deletedAt,

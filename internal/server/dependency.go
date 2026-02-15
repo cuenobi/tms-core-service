@@ -57,10 +57,28 @@ func WireDependencies(app *fiber.App, cfg *config.AppConfig) error {
 		int64(cfg.JWT.AccessTokenExpiry.Minutes()),
 		int64(cfg.JWT.RefreshTokenExpiry.Hours()),
 	)
+	googleAuthUC := authUseCase.NewGoogleAuthUseCase(
+		userRepository,
+		tokenService,
+		cfg.Google.ClientID,
+		cfg.Google.ClientSecret,
+		cfg.Google.RedirectURL,
+		int64(cfg.JWT.AccessTokenExpiry.Minutes()),
+		int64(cfg.JWT.RefreshTokenExpiry.Hours()),
+	)
+	lineAuthUC := authUseCase.NewLineAuthUseCase(
+		userRepository,
+		tokenService,
+		cfg.Line.ChannelID,
+		cfg.Line.ChannelSecret,
+		cfg.Line.RedirectURL,
+		int64(cfg.JWT.AccessTokenExpiry.Minutes()),
+		int64(cfg.JWT.RefreshTokenExpiry.Hours()),
+	)
 
 	// Initialize handlers
 	healthCheckHandler := healthcheck.NewHandler(healthCheckUC)
-	authHandler := auth.NewHandler(authUC)
+	authHandler := auth.NewHandler(authUC, googleAuthUC, lineAuthUC, cfg.Server.FrontendURL)
 
 	// Setup routes
 	deps := &route.Dependencies{

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"tms-core-service/internal/api/http/dto"
+	"tms-core-service/internal/api/http/middleware"
 	"tms-core-service/internal/usecase/auth"
 	"tms-core-service/internal/util/httpresponse"
 	"tms-core-service/internal/util/validator"
@@ -11,12 +12,20 @@ import (
 
 // Handler handles authentication requests
 type Handler struct {
-	useCase *auth.AuthUseCase
+	useCase       *auth.AuthUseCase
+	googleUseCase *auth.GoogleAuthUseCase
+	lineUseCase   *auth.LineAuthUseCase
+	frontendURL   string
 }
 
 // NewHandler creates a new auth handler
-func NewHandler(useCase *auth.AuthUseCase) *Handler {
-	return &Handler{useCase: useCase}
+func NewHandler(useCase *auth.AuthUseCase, googleUseCase *auth.GoogleAuthUseCase, lineUseCase *auth.LineAuthUseCase, frontendURL string) *Handler {
+	return &Handler{
+		useCase:       useCase,
+		googleUseCase: googleUseCase,
+		lineUseCase:   lineUseCase,
+		frontendURL:   frontendURL,
+	}
 }
 
 // Register godoc
@@ -62,6 +71,7 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 			FirstName:   result.User.FirstName,
 			LastName:    result.User.LastName,
 			PhoneNumber: result.User.PhoneNumber,
+			AvatarURL:   result.User.AvatarURL,
 		},
 	}, "User registered successfully")
 }
@@ -106,6 +116,114 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 			FirstName:   result.User.FirstName,
 			LastName:    result.User.LastName,
 			PhoneNumber: result.User.PhoneNumber,
+			AvatarURL:   result.User.AvatarURL,
 		},
 	}, "Login successful")
+}
+
+// GoogleLogin godoc
+// @Summary Google Login
+// @Description Redirect to Google OAuth login page
+// @Tags auth
+// @Success 302
+// @Router /api/v1/auth/google/login [get]
+func (h *Handler) GoogleLogin(c *fiber.Ctx) error {
+	url := h.googleUseCase.GetGoogleLoginURL("random-state") // In production, use a secure random state
+	return c.Redirect(url)
+}
+
+// GoogleCallback godoc
+// @Summary Google OAuth Callback
+// @Description Handle Google OAuth redirect and authenticate user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param code query string true "Authorization code"
+// @Success 200 {object} httpresponse.Response{data=dto.AuthResponse}
+// @Failure 401 {object} httpresponse.Response
+// @Failure 500 {object} httpresponse.Response
+// @Router /api/v1/auth/google/callback [get]
+func (h *Handler) GoogleCallback(c *fiber.Ctx) error {
+	code := c.Query("code")
+	if code == "" {
+		return c.Redirect(h.frontendURL + "/signin?error=no_code")
+	}
+
+	result, err := h.googleUseCase.HandleGoogleCallback(c.Context(), code)
+	if err != nil {
+		return c.Redirect(h.frontendURL + "/signin?error=auth_failed")
+	}
+
+	// Redirect to frontend callback with tokens
+	return c.Redirect(h.frontendURL + "/auth/callback?token=" + result.AccessToken + "&refresh_token=" + result.RefreshToken)
+}
+
+// LineLogin godoc
+// @Summary LINE Login
+// @Description Redirect to LINE OAuth login page
+// @Tags auth
+// @Success 302
+// @Router /api/v1/auth/line/login [get]
+func (h *Handler) LineLogin(c *fiber.Ctx) error {
+	url := h.lineUseCase.GetLineLoginURL("random-state") // In production, use a secure random state
+	return c.Redirect(url)
+}
+
+// LineCallback godoc
+// @Summary LINE OAuth Callback
+// @Description Handle LINE OAuth redirect and authenticate user
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param code query string true "Authorization code"
+// @Success 200 {object} httpresponse.Response{data=dto.AuthResponse}
+// @Failure 401 {object} httpresponse.Response
+// @Failure 500 {object} httpresponse.Response
+// @Router /api/v1/auth/line/callback [get]
+func (h *Handler) LineCallback(c *fiber.Ctx) error {
+	code := c.Query("code")
+	if code == "" {
+		return c.Redirect(h.frontendURL + "/signin?error=no_code")
+	}
+
+	result, err := h.lineUseCase.HandleLineCallback(c.Context(), code)
+	if err != nil {
+		return c.Redirect(h.frontendURL + "/signin?error=auth_failed")
+	}
+
+	// Redirect to frontend callback with tokens
+	return c.Redirect(h.frontendURL + "/auth/callback?token=" + result.AccessToken + "&refresh_token=" + result.RefreshToken)
+}
+
+// GetProfile godoc
+// @Summary Get User Profile
+// @Description Get currently authenticated user's profile
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Success 200 {object} httpresponse.Response{data=dto.UserResponse}
+// @Failure 401 {object} httpresponse.Response
+// @Failure 404 {object} httpresponse.Response
+// @Failure 500 {object} httpresponse.Response
+// @Router /api/v1/auth/me [get]
+func (h *Handler) GetProfile(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		return httpresponse.Error(c, fiber.ErrUnauthorized)
+	}
+
+	user, err := h.useCase.GetProfile(c.Context(), userID)
+	if err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	return httpresponse.Success(c, dto.UserResponse{
+		ID:          user.ID.String(),
+		Email:       user.Email,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		PhoneNumber: user.PhoneNumber,
+		AvatarURL:   user.AvatarURL,
+	}, "Profile retrieved successfully")
 }

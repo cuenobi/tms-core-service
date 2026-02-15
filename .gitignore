@@ -1,7 +1,7 @@
-*.swp
-*.swo
-*~
-.DS_Store
+# Sensitive config
+env.yaml
+.env
+.env.local
 
 # Binaries
 bin/

@@ -7,6 +7,7 @@ import (
 	"tms-core-service/internal/domain/entity"
 	"tms-core-service/internal/domain/errs"
 	"tms-core-service/internal/domain/repository"
+	"tms-core-service/internal/infra/db"
 	"tms-core-service/internal/infra/db/model"
 
 	"github.com/google/uuid"
@@ -25,7 +26,7 @@ func NewUserRepository(db *gorm.DB) repository.UserRepository {
 // FindByID retrieves a user by ID
 func (r *userRepo) FindByID(ctx context.Context, id uuid.UUID) (*entity.User, error) {
 	var user model.User
-	if err := r.db.WithContext(ctx).First(&user, "id = ?", id).Error; err != nil {
+	if err := db.FromContext(ctx, r.db).WithContext(ctx).First(&user, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrNotFound
 		}
@@ -37,7 +38,7 @@ func (r *userRepo) FindByID(ctx context.Context, id uuid.UUID) (*entity.User, er
 // FindByEmail retrieves a user by email
 func (r *userRepo) FindByEmail(ctx context.Context, email string) (*entity.User, error) {
 	var user model.User
-	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+	if err := db.FromContext(ctx, r.db).WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrNotFound
 		}
@@ -49,7 +50,31 @@ func (r *userRepo) FindByEmail(ctx context.Context, email string) (*entity.User,
 // FindByPhoneNumber retrieves a user by phone number
 func (r *userRepo) FindByPhoneNumber(ctx context.Context, phone string) (*entity.User, error) {
 	var user model.User
-	if err := r.db.WithContext(ctx).Where("phone_number = ?", phone).First(&user).Error; err != nil {
+	if err := db.FromContext(ctx, r.db).WithContext(ctx).Where("phone_number = ?", phone).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrNotFound
+		}
+		return nil, err
+	}
+	return user.ToEntity(), nil
+}
+
+// FindByGoogleID retrieves a user by google ID
+func (r *userRepo) FindByGoogleID(ctx context.Context, googleID string) (*entity.User, error) {
+	var user model.User
+	if err := db.FromContext(ctx, r.db).WithContext(ctx).Where("google_id = ?", googleID).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errs.ErrNotFound
+		}
+		return nil, err
+	}
+	return user.ToEntity(), nil
+}
+
+// FindByLineID retrieves a user by LINE ID
+func (r *userRepo) FindByLineID(ctx context.Context, lineID string) (*entity.User, error) {
+	var user model.User
+	if err := db.FromContext(ctx, r.db).WithContext(ctx).Where("line_id = ?", lineID).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errs.ErrNotFound
 		}
@@ -61,7 +86,7 @@ func (r *userRepo) FindByPhoneNumber(ctx context.Context, phone string) (*entity
 // Create creates a new user
 func (r *userRepo) Create(ctx context.Context, user *entity.User) error {
 	dbModel := model.FromEntity(user)
-	if err := r.db.WithContext(ctx).Create(dbModel).Error; err != nil {
+	if err := db.FromContext(ctx, r.db).WithContext(ctx).Create(dbModel).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return errs.ErrConflict
 		}
@@ -75,7 +100,7 @@ func (r *userRepo) Create(ctx context.Context, user *entity.User) error {
 // Update updates an existing user
 func (r *userRepo) Update(ctx context.Context, user *entity.User) error {
 	dbModel := model.FromEntity(user)
-	result := r.db.WithContext(ctx).Save(dbModel)
+	result := db.FromContext(ctx, r.db).WithContext(ctx).Save(dbModel)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -87,7 +112,7 @@ func (r *userRepo) Update(ctx context.Context, user *entity.User) error {
 
 // Delete soft deletes a user
 func (r *userRepo) Delete(ctx context.Context, id uuid.UUID) error {
-	result := r.db.WithContext(ctx).Delete(&model.User{}, "id = ?", id)
+	result := db.FromContext(ctx, r.db).WithContext(ctx).Delete(&model.User{}, "id = ?", id)
 
 	if result.Error != nil {
 		return result.Error
@@ -102,12 +127,13 @@ func (r *userRepo) Delete(ctx context.Context, id uuid.UUID) error {
 func (r *userRepo) List(ctx context.Context, limit, offset int) ([]*entity.User, int64, error) {
 	var dbUsers []*model.User
 	var total int64
+	dbConn := db.FromContext(ctx, r.db).WithContext(ctx)
 
-	if err := r.db.WithContext(ctx).Model(&model.User{}).Count(&total).Error; err != nil {
+	if err := dbConn.Model(&model.User{}).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	if err := r.db.WithContext(ctx).
+	if err := dbConn.
 		Limit(limit).
 		Offset(offset).
 		Find(&dbUsers).Error; err != nil {

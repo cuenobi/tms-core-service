@@ -10,10 +10,13 @@ import (
 type User struct {
 	ID           uuid.UUID
 	Email        string
-	PhoneNumber  string
+	PhoneNumber  *string
 	PasswordHash string
 	FirstName    string
 	LastName     string
+	AvatarURL    string
+	GoogleID     *string
+	LineID       *string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    *time.Time
