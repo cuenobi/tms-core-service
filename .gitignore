@@ -52,3 +52,5 @@ docs/swagger.yaml
 .env
 .env.local
 .env.*.local
+
+tmp/*
