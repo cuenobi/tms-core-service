@@ -1,0 +1,45 @@
+meta {
+  name: Login
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{base_url}}/api/v1/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "test@example.com",
+    "password": "password123"
+  }
+}
+
+docs {
+  # Login
+  
+  Authenticate user and get JWT tokens.
+  
+  **Request Body:**
+  - email: User email (required)
+  - password: User password (required)
+  
+  **Response:**
+  - access_token: JWT access token (15 minutes)
+  - refresh_token: JWT refresh token (7 days)
+  - user: User object
+  
+  **Note:** The access token will be automatically saved to the environment variable for use in protected endpoints.
+}
+
+script:post-response {
+  if (res.status === 200 && res.body.data) {
+    bru.setVar("access_token", res.body.data.access_token);
+  }
+}

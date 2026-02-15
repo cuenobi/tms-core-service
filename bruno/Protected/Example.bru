@@ -1,0 +1,30 @@
+meta {
+  name: Protected Endpoint Example
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/api/v1/protected/example
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+docs {
+  # Protected Endpoint Example
+  
+  This is an example of how to call a protected endpoint that requires JWT authentication.
+  
+  **Authentication:**
+  - Requires Bearer token in Authorization header
+  - Token is automatically used from the `access_token` environment variable
+  
+  **Note:**
+  - Make sure to login first to get the access token
+  - This endpoint doesn't exist yet in the current implementation
+  - Add your own protected endpoints following this pattern
+}

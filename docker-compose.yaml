@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tms-postgres
+    environment:
+      POSTGRES_USER: tms_user
+      POSTGRES_PASSWORD: tms_password
+      POSTGRES_DB: tms_core_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tms_user -d tms_core_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tms-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tms-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tms-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tms-app
+    ports:
+      - "8080:8080"
+    environment:
+      - CONFIG_PATH=./env.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tms-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  tms-network:
+    driver: bridge

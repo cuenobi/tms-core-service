@@ -1,0 +1,47 @@
+meta {
+  name: Register User
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/v1/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "test@example.com",
+    "password": "password123",
+    "first_name": "Test",
+    "last_name": "User"
+  }
+}
+
+docs {
+  # Register User
+  
+  Create a new user account.
+  
+  **Request Body:**
+  - email: User email (required, must be valid email)
+  - password: User password (required, min 6 characters)
+  - first_name: User first name (optional)
+  - last_name: User last name (optional)
+  
+  **Response:**
+  - access_token: JWT access token (15 minutes)
+  - refresh_token: JWT refresh token (7 days)
+  - user: User object
+}
+
+script:post-response {
+  if (res.status === 201 && res.body.data) {
+    bru.setVar("access_token", res.body.data.access_token);
+  }
+}

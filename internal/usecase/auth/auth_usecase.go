@@ -1,0 +1,136 @@
+package auth
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"tms-core-service/internal/domain/entity"
+	"tms-core-service/internal/domain/errs"
+	"tms-core-service/internal/domain/repository"
+	"tms-core-service/internal/domain/service"
+)
+
+// AuthUseCase handles authentication operations
+type AuthUseCase struct {
+	userRepo      repository.UserRepository
+	hashService   service.HashService
+	tokenService  service.TokenService
+	accessExpiry  int64 // in minutes
+	refreshExpiry int64 // in hours
+}
+
+// NewAuthUseCase creates a new auth use case
+func NewAuthUseCase(
+	userRepo repository.UserRepository,
+	hashService service.HashService,
+	tokenService service.TokenService,
+	accessExpiry, refreshExpiry int64,
+) *AuthUseCase {
+	return &AuthUseCase{
+		userRepo:      userRepo,
+		hashService:   hashService,
+		tokenService:  tokenService,
+		accessExpiry:  accessExpiry,
+		refreshExpiry: refreshExpiry,
+	}
+}
+
+// Register registers a new user
+func (uc *AuthUseCase) Register(ctx context.Context, input RegisterInput) (*AuthOutput, error) {
+	// Check if user already exists (Email)
+	existingUser, err := uc.userRepo.FindByEmail(ctx, input.Email)
+	if err != nil && !errors.Is(err, errs.ErrNotFound) {
+		return nil, fmt.Errorf("user repository: find by email: %w", err)
+	}
+	if existingUser != nil {
+		return nil, errs.ErrConflict
+	}
+
+	// Check if user already exists (Phone Number)
+	existingUser, err = uc.userRepo.FindByPhoneNumber(ctx, input.PhoneNumber)
+	if err != nil && !errors.Is(err, errs.ErrNotFound) {
+		return nil, fmt.Errorf("user repository: find by phone number: %w", err)
+	}
+	if existingUser != nil {
+		return nil, errs.ErrConflict
+	}
+
+	// Hash password via service
+	passwordHash, err := uc.hashService.HashPassword(input.Password)
+	if err != nil {
+		return nil, fmt.Errorf("hash service: failed to hash password: %w", err)
+	}
+
+	// Create user
+	user := &entity.User{
+		Email:        input.Email,
+		PhoneNumber:  input.PhoneNumber,
+		PasswordHash: passwordHash,
+		FirstName:    input.FirstName,
+		LastName:     input.LastName,
+	}
+
+	if err := uc.userRepo.Create(ctx, user); err != nil {
+		return nil, fmt.Errorf("user repository: create user: %w", err)
+	}
+
+	// Generate tokens
+	return uc.generateTokens(user)
+}
+
+// Login authenticates a user
+func (uc *AuthUseCase) Login(ctx context.Context, input LoginInput) (*AuthOutput, error) {
+	// Find user by email
+	user, err := uc.userRepo.FindByEmail(ctx, input.Email)
+	if err != nil {
+		if errors.Is(err, errs.ErrNotFound) {
+			return nil, errs.ErrInvalidCredentials
+		}
+		return nil, fmt.Errorf("user repository: find by email: %w", err)
+	}
+
+	// Verify password via service
+	if !uc.hashService.CheckPassword(input.Password, user.PasswordHash) {
+		return nil, errs.ErrInvalidCredentials
+	}
+
+	// Generate tokens
+	return uc.generateTokens(user)
+}
+
+// generateTokens generates access and refresh tokens
+func (uc *AuthUseCase) generateTokens(user *entity.User) (*AuthOutput, error) {
+	// Generate access token
+	accessToken, err := uc.tokenService.GenerateToken(
+		user.ID,
+		user.Email,
+		time.Duration(uc.accessExpiry)*time.Minute,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	// Generate refresh token
+	refreshToken, err := uc.tokenService.GenerateToken(
+		user.ID,
+		user.Email,
+		time.Duration(uc.refreshExpiry)*time.Hour,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate refresh token: %w", err)
+	}
+
+	return &AuthOutput{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		User: &UserOutput{
+			ID:          user.ID,
+			Email:       user.Email,
+			PhoneNumber: user.PhoneNumber,
+			FirstName:   user.FirstName,
+			LastName:    user.LastName,
+		},
+	}, nil
+}
