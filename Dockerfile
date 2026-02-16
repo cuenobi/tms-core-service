@@ -29,6 +29,7 @@ COPY --from=builder /app/env.yaml .
 COPY --from=builder /app/db/migrations ./db/migrations
 
 # Expose port
+ENV PORT=8080
 EXPOSE 8080
 
 # Run the application
