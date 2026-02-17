@@ -23,3 +23,15 @@ func (s *jwtTokenService) GenerateToken(userID uuid.UUID, email string, expiry t
 	// or we update the package/claims. For this refactor, let's just pass it.
 	return s.jwtService.GenerateToken(userID, email, expiry)
 }
+
+func (s *jwtTokenService) ValidateToken(tokenString string) (*service.TokenClaims, error) {
+	claims, err := s.jwtService.ValidateToken(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	return &service.TokenClaims{
+		UserID: claims.UserID,
+		Email:  claims.Status, // Status maps to email
+	}, nil
+}

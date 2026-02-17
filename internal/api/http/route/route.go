@@ -41,6 +41,7 @@ func SetupRoutes(app *fiber.App, deps *Dependencies) {
 	authGroup.Get("/google/callback", deps.AuthHandler.GoogleCallback)
 	authGroup.Get("/line/login", deps.AuthHandler.LineLogin)
 	authGroup.Get("/line/callback", deps.AuthHandler.LineCallback)
+	authGroup.Post("/refresh", deps.AuthHandler.RefreshToken)
 
 	// Protected routes (JWT required)
 	protected := v1.Group("", middleware.JWTAuth(deps.JWTService))

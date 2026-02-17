@@ -227,3 +227,44 @@ func (h *Handler) GetProfile(c *fiber.Ctx) error {
 		AvatarURL:   user.AvatarURL,
 	}, "Profile retrieved successfully")
 }
+
+// RefreshToken godoc
+// @Summary Refresh Tokens
+// @Description refresh access and refresh tokens
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body dto.RefreshTokenRequest true "Refresh token details"
+// @Success 200 {object} httpresponse.Response{data=dto.AuthResponse}
+// @Failure 401 {object} httpresponse.Response
+// @Failure 500 {object} httpresponse.Response
+// @Router /api/v1/auth/refresh [post]
+func (h *Handler) RefreshToken(c *fiber.Ctx) error {
+	var req dto.RefreshTokenRequest
+	if err := c.BodyParser(&req); err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	// Validate request body
+	if err := validator.Validate(req); err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	result, err := h.useCase.RefreshToken(c.Context(), req.RefreshToken)
+	if err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	return httpresponse.Success(c, dto.AuthResponse{
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
+		User: &dto.UserResponse{
+			ID:          result.User.ID.String(),
+			Email:       result.User.Email,
+			FirstName:   result.User.FirstName,
+			LastName:    result.User.LastName,
+			PhoneNumber: result.User.PhoneNumber,
+			AvatarURL:   result.User.AvatarURL,
+		},
+	}, "Token refreshed successfully")
+}

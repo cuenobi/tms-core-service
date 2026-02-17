@@ -104,6 +104,27 @@ func (uc *AuthUseCase) Login(ctx context.Context, input LoginInput) (*AuthOutput
 	return uc.generateTokens(user)
 }
 
+// RefreshToken refreshes access and refresh tokens
+func (uc *AuthUseCase) RefreshToken(ctx context.Context, refreshToken string) (*AuthOutput, error) {
+	// Validate refresh token
+	claims, err := uc.tokenService.ValidateToken(refreshToken)
+	if err != nil {
+		return nil, errs.ErrUnauthorized
+	}
+
+	// Find user by ID to ensure they still exist and are active
+	user, err := uc.userRepo.FindByID(ctx, claims.UserID)
+	if err != nil {
+		if errors.Is(err, errs.ErrNotFound) {
+			return nil, errs.ErrUnauthorized
+		}
+		return nil, fmt.Errorf("user repository: find by id: %w", err)
+	}
+
+	// Generate new tokens
+	return uc.generateTokens(user)
+}
+
 // GetProfile returns user profile
 func (uc *AuthUseCase) GetProfile(ctx context.Context, userID uuid.UUID) (*UserOutput, error) {
 	user, err := uc.userRepo.FindByID(ctx, userID)
