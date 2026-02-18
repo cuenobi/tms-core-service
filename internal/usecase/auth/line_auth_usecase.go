@@ -107,6 +107,7 @@ func (uc *LineAuthUseCase) HandleLineCallback(ctx context.Context, code string) 
 		user = &entity.User{
 			FirstName: profile.DisplayName,
 			AvatarURL: profile.PictureURL,
+			Email:     nil, // Explicitly set to nil to ensure NULL in DB
 			LineID:    stringPtr(profile.UserID),
 		}
 		if err := uc.userRepo.Create(ctx, user); err != nil {

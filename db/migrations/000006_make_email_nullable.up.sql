@@ -4,9 +4,14 @@
 -- Drop the existing NOT NULL constraint
 ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
 
+-- Drop the old unique constraint created by the UNIQUE keyword
+-- This is often named users_email_key by default in PostgreSQL
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
+
 -- Drop old unique index and recreate as partial index (only enforce uniqueness for non-null emails)
 DROP INDEX IF EXISTS idx_users_email;
 CREATE UNIQUE INDEX idx_users_email ON users (email) WHERE email IS NOT NULL AND email != '';
 
 -- Convert any existing empty string emails to NULL
 UPDATE users SET email = NULL WHERE email = '';
+

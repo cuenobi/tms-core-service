@@ -35,5 +35,6 @@ func (h *Handler) Check(c *fiber.Ctx) error {
 	return httpresponse.Success(c, dto.HealthResponse{
 		Status:   "healthy",
 		Database: "connected",
+		Version:  "1.0.1",
 	}, "Service is healthy")
 }
