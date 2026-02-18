@@ -69,7 +69,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, input RegisterInput) (*Auth
 
 	// Create user
 	user := &entity.User{
-		Email:        input.Email,
+		Email:        stringPtr(input.Email),
 		PhoneNumber:  stringPtr(input.PhoneNumber),
 		PasswordHash: passwordHash,
 		FirstName:    input.FirstName,
@@ -150,7 +150,7 @@ func (uc *AuthUseCase) generateTokens(user *entity.User) (*AuthOutput, error) {
 	// Generate access token
 	accessToken, err := uc.tokenService.GenerateToken(
 		user.ID,
-		user.Email,
+		stringFromPtr(user.Email),
 		time.Duration(uc.accessExpiry)*time.Minute,
 	)
 	if err != nil {
@@ -160,7 +160,7 @@ func (uc *AuthUseCase) generateTokens(user *entity.User) (*AuthOutput, error) {
 	// Generate refresh token
 	refreshToken, err := uc.tokenService.GenerateToken(
 		user.ID,
-		user.Email,
+		stringFromPtr(user.Email),
 		time.Duration(uc.refreshExpiry)*time.Hour,
 	)
 	if err != nil {

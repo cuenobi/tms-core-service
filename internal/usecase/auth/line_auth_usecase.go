@@ -194,7 +194,7 @@ func (uc *LineAuthUseCase) getProfile(_ context.Context, accessToken string) (*l
 func (uc *LineAuthUseCase) generateTokens(user *entity.User) (*AuthOutput, error) {
 	accessToken, err := uc.tokenService.GenerateToken(
 		user.ID,
-		user.Email,
+		stringFromPtr(user.Email),
 		time.Duration(uc.accessExpiry)*time.Minute,
 	)
 	if err != nil {
@@ -203,7 +203,7 @@ func (uc *LineAuthUseCase) generateTokens(user *entity.User) (*AuthOutput, error
 
 	refreshToken, err := uc.tokenService.GenerateToken(
 		user.ID,
-		user.Email,
+		stringFromPtr(user.Email),
 		time.Duration(uc.refreshExpiry)*time.Hour,
 	)
 	if err != nil {

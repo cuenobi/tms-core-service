@@ -102,7 +102,7 @@ func (uc *GoogleAuthUseCase) HandleGoogleCallback(ctx context.Context, code stri
 		} else {
 			// Create new user
 			user = &entity.User{
-				Email:     userInfo.Email,
+				Email:     stringPtr(userInfo.Email),
 				FirstName: userInfo.GivenName,
 				LastName:  userInfo.FamilyName,
 				AvatarURL: userInfo.Picture,
@@ -144,7 +144,7 @@ func (uc *GoogleAuthUseCase) generateTokens(user *entity.User) (*AuthOutput, err
 	// Generate access token
 	accessToken, err := uc.tokenService.GenerateToken(
 		user.ID,
-		user.Email,
+		stringFromPtr(user.Email),
 		time.Duration(uc.accessExpiry)*time.Minute,
 	)
 	if err != nil {
@@ -154,7 +154,7 @@ func (uc *GoogleAuthUseCase) generateTokens(user *entity.User) (*AuthOutput, err
 	// Generate refresh token
 	refreshToken, err := uc.tokenService.GenerateToken(
 		user.ID,
-		user.Email,
+		stringFromPtr(user.Email),
 		time.Duration(uc.refreshExpiry)*time.Hour,
 	)
 	if err != nil {

@@ -20,7 +20,7 @@ type LoginInput struct {
 // UserOutput represents user output data
 type UserOutput struct {
 	ID          uuid.UUID
-	Email       string
+	Email       *string
 	PhoneNumber string
 	FirstName   string
 	LastName    string

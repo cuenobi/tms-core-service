@@ -9,7 +9,7 @@ import (
 // User represents a user in the system (Pure Domain Entity)
 type User struct {
 	ID           uuid.UUID
-	Email        string
+	Email        *string
 	PhoneNumber  *string
 	PasswordHash string
 	FirstName    string

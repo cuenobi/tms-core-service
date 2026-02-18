@@ -12,7 +12,7 @@ import (
 // User is the database model for users
 type User struct {
 	ID           uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()"`
-	Email        string    `gorm:"uniqueIndex;not null"`
+	Email        *string   `gorm:"uniqueIndex"`
 	PhoneNumber  *string   `gorm:"uniqueIndex"`
 	PasswordHash string
 	FirstName    string
