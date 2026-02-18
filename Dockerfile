@@ -25,13 +25,8 @@ WORKDIR /root/
 
 # Copy the binary from builder
 COPY --from=builder /app/main .
-# Check if env.yaml exists, if not use env.example.yaml
-COPY --from=builder /app/env.example.yaml ./env.example.yaml
-RUN if [ -f "/app/env.yaml" ]; then \
-        cp /app/env.yaml ./env.yaml; \
-    else \
-        cp /env.example.yaml ./env.yaml; \
-    fi
+# Use env.example.yaml as the default configuration file
+COPY --from=builder /app/env.example.yaml ./env.yaml
 COPY --from=builder /app/db/migrations ./db/migrations
 
 # Expose port

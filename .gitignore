@@ -52,6 +52,8 @@ docs/swagger.yaml
 .env
 .env.local
 .env.*.local
-env*
+# env* (Removed too broad pattern)
+env.yaml
+!env.example.yaml
 
 tmp/*
