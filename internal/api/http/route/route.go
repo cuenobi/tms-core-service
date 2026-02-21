@@ -46,4 +46,6 @@ func SetupRoutes(app *fiber.App, deps *Dependencies) {
 	// Protected routes (JWT required)
 	protected := v1.Group("", middleware.JWTAuth(deps.JWTService))
 	protected.Get("/auth/me", deps.AuthHandler.GetProfile)
+	protected.Put("/auth/profile", deps.AuthHandler.UpdateProfile)
+	protected.Post("/auth/avatar/upload-url", deps.AuthHandler.GetAvatarUploadURL)
 }

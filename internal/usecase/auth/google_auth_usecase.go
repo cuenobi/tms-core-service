@@ -123,7 +123,8 @@ func (uc *GoogleAuthUseCase) HandleGoogleCallback(ctx context.Context, code stri
 			user.LastName = userInfo.FamilyName
 			updated = true
 		}
-		if user.AvatarURL != userInfo.Picture {
+		// Only update avatar if currently empty
+		if user.AvatarURL == "" && userInfo.Picture != "" {
 			user.AvatarURL = userInfo.Picture
 			updated = true
 		}

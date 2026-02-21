@@ -12,6 +12,7 @@ import (
 	userRepo "tms-core-service/internal/infra/db/repository/user"
 	"tms-core-service/internal/infra/redis"
 	hashSvc "tms-core-service/internal/infra/service/hash"
+	storageSvc "tms-core-service/internal/infra/service/storage"
 	tokenSvc "tms-core-service/internal/infra/service/token"
 	authUseCase "tms-core-service/internal/usecase/auth"
 	healthcheckUseCase "tms-core-service/internal/usecase/healthcheck"
@@ -48,12 +49,22 @@ func WireDependencies(app *fiber.App, cfg *config.AppConfig) error {
 	// Initialize cache repository (if needed)
 	_ = redis.NewCacheRepository(redisClient)
 
+	// Initialize S3 storage service
+	storageService := storageSvc.NewS3StorageService(
+		cfg.S3.Region,
+		cfg.S3.Bucket,
+		cfg.S3.AccessKey,
+		cfg.S3.SecretKey,
+		cfg.S3.PresignExpiry,
+	)
+
 	// Initialize use cases
 	healthCheckUC := healthcheckUseCase.NewHealthCheckUseCase(healthCheckRepo)
 	authUC := authUseCase.NewAuthUseCase(
 		userRepository,
 		hashService,
 		tokenService,
+		storageService,
 		int64(cfg.JWT.AccessTokenExpiry.Minutes()),
 		int64(cfg.JWT.RefreshTokenExpiry.Hours()),
 	)

@@ -120,7 +120,8 @@ func (uc *LineAuthUseCase) HandleLineCallback(ctx context.Context, code string) 
 			user.FirstName = profile.DisplayName
 			updated = true
 		}
-		if user.AvatarURL != profile.PictureURL {
+		// Only update avatar if currently empty
+		if user.AvatarURL == "" && profile.PictureURL != "" {
 			user.AvatarURL = profile.PictureURL
 			updated = true
 		}

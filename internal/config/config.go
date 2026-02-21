@@ -17,6 +17,7 @@ type AppConfig struct {
 	Migration MigrationConfig `mapstructure:"migration"`
 	Google    GoogleConfig    `mapstructure:"google"`
 	Line      LineConfig      `mapstructure:"line"`
+	S3        S3Config        `mapstructure:"s3"`
 }
 
 // ServerConfig contains HTTP server settings
@@ -90,6 +91,15 @@ type LineConfig struct {
 	RedirectURL   string `mapstructure:"redirect_url"`
 }
 
+// S3Config contains AWS S3 storage settings
+type S3Config struct {
+	Region        string        `mapstructure:"region"`
+	Bucket        string        `mapstructure:"bucket"`
+	AccessKey     string        `mapstructure:"access_key"`
+	SecretKey     string        `mapstructure:"secret_key"`
+	PresignExpiry time.Duration `mapstructure:"presign_expiry"`
+}
+
 // LoadConfig loads configuration from the specified file
 func LoadConfig(configPath string) (*AppConfig, error) {
 	viper.SetConfigFile(configPath)
@@ -136,6 +146,11 @@ func LoadConfig(configPath string) (*AppConfig, error) {
 	var config AppConfig
 	if err := viper.Unmarshal(&config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	// Basic validation for critical S3 config
+	if config.S3.Region == "" || config.S3.Bucket == "" {
+		fmt.Printf("[WARNING] S3 configuration is incomplete: Region='%s', Bucket='%s'\n", config.S3.Region, config.S3.Bucket)
 	}
 
 	return &config, nil

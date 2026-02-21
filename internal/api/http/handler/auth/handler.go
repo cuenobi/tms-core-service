@@ -228,6 +228,94 @@ func (h *Handler) GetProfile(c *fiber.Ctx) error {
 	}, "Profile retrieved successfully")
 }
 
+// UpdateProfile godoc
+// @Summary Update User Profile
+// @Description Update the currently authenticated user's profile information
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body dto.UpdateProfileRequest true "Profile update details"
+// @Success 200 {object} httpresponse.Response{data=dto.UserResponse}
+// @Failure 400 {object} httpresponse.Response
+// @Failure 401 {object} httpresponse.Response
+// @Failure 404 {object} httpresponse.Response
+// @Failure 500 {object} httpresponse.Response
+// @Router /api/v1/auth/profile [put]
+func (h *Handler) UpdateProfile(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		return httpresponse.Error(c, fiber.ErrUnauthorized)
+	}
+
+	var req dto.UpdateProfileRequest
+	if err := c.BodyParser(&req); err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	if err := validator.Validate(req); err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	user, err := h.useCase.UpdateProfile(c.Context(), userID, auth.UpdateProfileInput{
+		FirstName:   req.FirstName,
+		LastName:    req.LastName,
+		PhoneNumber: req.PhoneNumber,
+		AvatarURL:   req.AvatarURL,
+	})
+	if err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	return httpresponse.Success(c, dto.UserResponse{
+		ID:          user.ID.String(),
+		Email:       user.Email,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		PhoneNumber: user.PhoneNumber,
+		AvatarURL:   user.AvatarURL,
+	}, "Profile updated successfully")
+}
+
+// GetAvatarUploadURL godoc
+// @Summary Get Avatar Upload URL
+// @Description Get a presigned URL for uploading a profile avatar
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security Bearer
+// @Param request body dto.AvatarUploadRequest true "Content type of the image"
+// @Success 200 {object} httpresponse.Response{data=dto.PresignUploadResponse}
+// @Failure 400 {object} httpresponse.Response
+// @Failure 401 {object} httpresponse.Response
+// @Failure 500 {object} httpresponse.Response
+// @Router /api/v1/auth/avatar/upload-url [post]
+func (h *Handler) GetAvatarUploadURL(c *fiber.Ctx) error {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		return httpresponse.Error(c, fiber.ErrUnauthorized)
+	}
+
+	var req dto.AvatarUploadRequest
+	if err := c.BodyParser(&req); err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	if err := validator.Validate(req); err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	result, err := h.useCase.GenerateAvatarUploadURL(c.Context(), userID, req.ContentType)
+	if err != nil {
+		return httpresponse.Error(c, err)
+	}
+
+	return httpresponse.Success(c, dto.PresignUploadResponse{
+		UploadURL: result.UploadURL,
+		ObjectKey: result.ObjectKey,
+	}, "Upload URL generated successfully")
+}
+
 // RefreshToken godoc
 // @Summary Refresh Tokens
 // @Description refresh access and refresh tokens

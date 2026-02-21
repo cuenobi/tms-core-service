@@ -27,9 +27,23 @@ type UserOutput struct {
 	AvatarURL   string
 }
 
+// UpdateProfileInput represents data for updating a user profile
+type UpdateProfileInput struct {
+	FirstName   string
+	LastName    string
+	PhoneNumber string
+	AvatarURL   string
+}
+
 // AuthOutput represents authentication results
 type AuthOutput struct {
 	AccessToken  string
 	RefreshToken string
 	User         *UserOutput
+}
+
+// PresignUploadOutput represents the result of a presigned upload URL request
+type PresignUploadOutput struct {
+	UploadURL string
+	ObjectKey string
 }

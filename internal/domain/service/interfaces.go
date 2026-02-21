@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,4 +23,12 @@ type TokenClaims struct {
 type TokenService interface {
 	GenerateToken(userID uuid.UUID, email string, expiry time.Duration) (string, error)
 	ValidateToken(tokenString string) (*TokenClaims, error)
+}
+
+// StorageService defines the interface for file storage operations (e.g. S3)
+type StorageService interface {
+	// GenerateUploadURL creates a presigned URL for uploading a file
+	GenerateUploadURL(ctx context.Context, key string, contentType string) (string, error)
+	// GenerateDownloadURL creates a presigned URL for downloading a file
+	GenerateDownloadURL(ctx context.Context, key string) (string, error)
 }
