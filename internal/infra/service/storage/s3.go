@@ -8,6 +8,7 @@ import (
 	"tms-core-service/internal/domain/service"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
@@ -21,10 +22,23 @@ type s3Storage struct {
 
 // NewS3StorageService creates a new S3 storage service
 func NewS3StorageService(region, bucket, accessKey, secretKey string, expiry time.Duration) service.StorageService {
-	cfg := aws.Config{
-		Region:      region,
-		Credentials: credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""),
+	var cfg aws.Config
+	var err error
+
+	if accessKey != "" && secretKey != "" {
+		cfg = aws.Config{
+			Region:      region,
+			Credentials: credentials.NewStaticCredentialsProvider(accessKey, secretKey, ""),
+		}
+	} else {
+		// Use default credentials (IAM Role, Env Vars, Shared Config)
+		cfg, err = config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
+		if err != nil {
+			// Fallback to minimal config and let it fail later if still no credentials
+			cfg = aws.Config{Region: region}
+		}
 	}
+
 	client := s3.NewFromConfig(cfg)
 	presignClient := s3.NewPresignClient(client)
 
