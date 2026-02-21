@@ -138,6 +138,11 @@ func LoadConfig(configPath string) (*AppConfig, error) {
 	_ = viper.BindEnv("redis.host", "REDIS_HOST")
 	_ = viper.BindEnv("redis.port", "REDIS_PORT")
 	_ = viper.BindEnv("redis.password", "REDIS_PASSWORD")
+	_ = viper.BindEnv("s3.region", "S3_REGION")
+	_ = viper.BindEnv("s3.bucket", "S3_BUCKET")
+	_ = viper.BindEnv("s3.access_key", "S3_ACCESS_KEY")
+	_ = viper.BindEnv("s3.secret_key", "S3_SECRET_KEY")
+	_ = viper.BindEnv("s3.presign_expiry", "S3_PRESIGN_EXPIRY")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
